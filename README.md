@@ -12,3 +12,8 @@
    ```bash
    pip install -r requirments.txt
    ```
+5. Run main.py
+   ```bash
+   python main.py
+   ```
+6. Make sure you updated you API keys and OBS websocket server setting (Server IP, Server Port, Server Password + Sources [currently 'transcribe']) 

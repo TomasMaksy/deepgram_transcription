@@ -8,3 +8,7 @@
    ```bash
    python -m venv venv
    ```
+4. Install dependencies
+   ```bash
+   pip install -r requirments.txt
+   ```

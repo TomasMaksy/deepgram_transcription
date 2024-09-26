@@ -12,8 +12,12 @@
    ```bash
    pip install -r requirments.txt
    ```
-5. Run main.py
+5. Activate virtual environment (this whole solution will only work on mac)
+   ```bash
+   source venv/bin/activate
+   ```
+7. Run main.py
    ```bash
    python main.py
    ```
-6. Make sure you updated you API keys and OBS websocket server setting (Server IP, Server Port, Server Password + Sources [currently 'transcribe']) 
+8. Make sure you updated you API keys and OBS websocket server setting (Server IP, Server Port, Server Password + Sources [currently 'transcribe']) 

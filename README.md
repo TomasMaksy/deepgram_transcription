@@ -1,10 +1,23 @@
-# Deepgram Transcription
+# Deepgram Transcription (Only applicable for mac)
 
 ## Setup Instructions
 
-1. Clone this repository or copy the project folder to your machine.
-2. Navigate to the project directory.
-3. Create a virtual environment:
+1. Clone this repository and navigate to the project directory.
    ```bash
-   python -m venv venv
+   git clone https://github.com/TomasMaksy/deepgram_transcription.git
+   cd deepgram_transcription
    ```
+2. Setting Up a Virtual Environment (Linux/Mac)
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+3. Install dependencies
+   ```bash
+   pip install -r requirments.txt
+   ```
+4. Run main.py
+   ```bash
+   python main.py
+   ```
+5. Make sure you updated you API keys and OBS websocket server setting (Server IP, Server Port, Server Password + Sources [currently 'transcribe'])

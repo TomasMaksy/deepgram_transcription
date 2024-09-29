@@ -1,41 +1,93 @@
-import asyncio
-import os
-import sounddevice as sd
-import numpy as np
-from deepgram import Deepgram
+# Coded by maksy
+# Tomas Maksimovic use for Klub u Redaktorow by Wilnoteka
+##################################################################
+
+from dotenv import load_dotenv
+import logging
+from deepgram.utils import verboselogs
+from time import sleep
+
+import multiprocessing
+
+from deepgram import (
+    DeepgramClient,
+    DeepgramClientOptions,
+    LiveTranscriptionEvents,
+    LiveOptions,
+    Microphone,
+)
+
+load_dotenv()
 
 
-DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY')
-DEEPGRAM_API_URL = 'wss://api.deepgram.com/v1/listen?model=nova-2&language=lt'
+def transcribe(queue):
+    try:
+        deepgram = DeepgramClient()
+        dg_connection = deepgram.listen.websocket.v("1")
 
-# Create a Deepgram client
-deepgram = Deepgram(DEEPGRAM_API_KEY)
+        def on_open(self, open, **kwargs):
+            print(f"\n{open}\n")
 
-# Audio parameters
-SAMPLE_RATE = 16000  # Deepgram recommends 16kHz for audio
-CHANNELS = 1  # Mono audio
-BLOCK_SIZE = 1024  # Number of samples per block
-
-async def transcribe_audio():
-    # Connect to the Deepgram WebSocket
-    async with deepgram.transcription.live({'punctuate': True}) as socket:
-        # Callback function to send audio data
-        def callback(indata, frames, time, status):
-            if status:
-                print(status)
-            # Convert audio data to bytes and send to Deepgram
-            socket.send(indata.tobytes())
+        def on_message(self, result, **kwargs):
+            sentence = result.channel.alternatives[0].transcript
+            if len(sentence) == 0:
+                return
+            #print(f"{sentence}")
             
-        # Start streaming audio from the microphone
-        with sd.InputStream(samplerate=SAMPLE_RATE, channels=CHANNELS, blocksize=BLOCK_SIZE, callback=callback):
-            print("Listening...")
-            while True:
-                # Wait for transcription results
-                response = await socket.recv()
-                if 'channel' in response:
-                    transcript = response['channel']['alternatives'][0]['transcript']
-                    print(f'Transcription: {transcript}')
+            # Push the transcription to the queue
+            queue.put(sentence)
+            # print(f"Queud: {sentence}") # - troubleshooting
 
-# Run the transcription function
+
+        def on_unhandled(self, unhandled, **kwargs):
+            print(f"\n\n{unhandled}\n\n")
+
+
+        dg_connection.on(LiveTranscriptionEvents.Open, on_open)
+        dg_connection.on(LiveTranscriptionEvents.Transcript, on_message)
+        dg_connection.on(LiveTranscriptionEvents.Unhandled, on_unhandled)
+
+        options = {
+            "model": "nova-2",
+            "punctuate": True,
+            "language": "pl",
+            "encoding": "linear16",
+            "channels": 1,
+            "sample_rate": 16000,
+            "vad_events": True,
+        }
+
+        if dg_connection.start(options) is False:
+            print("Failed to connect to Deepgram")
+            return
+
+        print("\n\nPress Enter to stop recording...\n\n")
+
+
+
+        microphone = Microphone(dg_connection.send)
+        microphone.start()
+        while True: 
+            try:
+                input("")  # Wait for user input
+                break  # Exit the loop on Enter key
+            except EOFError:
+                pass  # Ignore EOFError and continue waiting for input
+        microphone.finish()
+        dg_connection.finish()
+        print("Finished")
+
+    except Exception as e:
+        print(f"Could not open socket: {e}")
+        return
+
 if __name__ == "__main__":
-    asyncio.run(transcribe_audio())
+    # Create a Queue for inter-process communication
+    transcription_queue = multiprocessing.Queue()
+
+    # Start the transcription process
+    transcribe_process = multiprocessing.Process(target=transcribe, args=(transcription_queue,))
+    transcribe_process.start()
+
+    # Keep the main process alive
+    transcribe_process.join()
